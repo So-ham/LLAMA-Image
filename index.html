@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Interface</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .chat-header {
+      background-color: #007bff;
+      color: #fff;
+      text-align: center;
+      padding: 10px;
+      border-radius: 8px 8px 0 0;
+      margin-bottom: 20px;
+    }
+
+    .chat-box {
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      overflow-y: auto;
+      max-height: 400px;
+      position: relative;
+    }
+
+    .message-container {
+      display: flex;
+      margin-bottom: 10px;
+    }
+
+    .user-message {
+      color: #fff;
+      background-color: #007bff;
+      border-radius: 8px 8px 0 8px;
+      padding: 10px;
+      margin-left: auto;
+      margin-right: 10px;
+    }
+
+    .bot-message {
+      color: #4caf50; /* Lighter green color for bot messages */
+      background-color: #dff0d8; /* Lighter green background color */
+      border-radius: 8px 8px 8px 0;
+      padding: 10px;
+      margin-right: auto;
+      margin-left: 10px;
+    }
+
+    .typing-indicator {
+      position: absolute;
+      bottom: 10px;
+      left: 20px; /* Adjusted position to be inside the chat box */
+      display: none;
+      color: #777;
+    }
+
+    .typing-indicator::after {
+      content: ".";
+      animation: dots 1s steps(5, end) infinite;
+    }
+
+    @keyframes dots {
+      0%, 20% {
+        content: "";
+      }
+      40% {
+        content: ".";
+      }
+      60% {
+        content: "..";
+      }
+      80%, 100% {
+        content: "...";
+      }
+    }
+
+    .input-container {
+      display: flex;
+      margin-top: 20px;
+    }
+
+    .input-field {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-right: 10px;
+      font-size: 16px;
+    }
+
+    .action-buttons {
+      display: flex;
+      align-items: center;
+    }
+
+    .action-button {
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .image-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .image-preview {
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="chat-header">
+      <h1>Chatbot</h1>
+    </div>
+    <div class="chat-box" id="chat-box">
+      <!-- Bot message will be displayed here -->
+    </div>
+    <div class="input-container">
+      <input type="text" id="user-input" class="input-field" placeholder="Type your message...">
+      <div class="action-buttons">
+        <button onclick="sendMessage()" class="action-button">Send</button>
+        <label for="image-input" class="action-button">Upload Image</label>
+        <input type="file" id="image-input" class="file-input" accept="image/*" onchange="handleFileUpload()">
+        <button onclick="retrieveImage()" class="action-button">Retrieve Image</button>
+      </div>
+    </div>
+    <div class="image-container" id="image-container" style="display: none;">
+      <img src="" alt="Retrieved Image" id="image-preview" class="image-preview">
+    </div>
+    <div class="typing-indicator" id="typing-indicator">Bot is typing</div>
+  </div>
+
+  <script>
+    // Array to store user messages
+    var userMessages = [];
+
+    function sendMessage() {
+      var userInput = document.getElementById("user-input").value;
+      var chatBox = document.getElementById("chat-box");
+      var typingIndicator = document.getElementById("typing-indicator");
+
+      // Display user message
+      var userMessage = document.createElement("div");
+      userMessage.textContent = userInput;
+      userMessage.classList.add("message-container", "user-message");
+      chatBox.appendChild(userMessage);
+
+      // Show typing indicator
+      typingIndicator.style.display = "block";
+
+      // Add user message to array
+      userMessages.push({ role: "user", content: userInput });
+
+      // Send user messages to backend
+      fetch("http://localhost:8080/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ messages: userMessages })
+      })
+      .then(response => response.json())
+      .then(data => {
+        // Hide typing indicator
+        typingIndicator.style.display = "none";
+
+        // Display bot response
+        var botMessage = document.createElement("div");
+        botMessage.textContent = data.response;
+        botMessage.classList.add("message-container", "bot-message");
+        chatBox.appendChild(botMessage);
+
+        // Clear input field
+        document.getElementById("user-input").value = "";
+      })
+      .catch(error => console.error("Error:", error));
+    }
+
+    function handleFileUpload() {
+      var fileInput = document.getElementById("image-input");
+      var file = fileInput.files[0];
+
+      // Create FormData object
+      var formData = new FormData();
+      formData.append("userID", 123);
+      formData.append("image", file);
+
+      // Upload image
+      fetch("http://localhost:8080/upload", {
+        method: "POST",
+        body: formData
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.text();
+        }
+        throw new Error("Upload failed");
+      })
+      .then(message => {
+        alert(message);
+      })
+      .catch(error => {
+        console.error("Error:", error);
+        alert("Failed to upload image");
+      });
+    }
+
+    function retrieveImage() {
+      fetch("http://localhost:8080/images/123")
+      .then(response => {
+        if (response.ok) {
+          return response.blob();
+        }
+        throw new Error("Image retrieval failed");
+      })
+      .then(imageBlob => {
+        var imageUrl = URL.createObjectURL(imageBlob);
+        document.getElementById("image-preview").src = imageUrl;
+        document.getElementById("image-container").style.display = "block";
+      })
+      .catch(error => {
+        console.error("Error:", error);
+        alert("Failed to retrieve image");
+      });
+    }
+  </script>
+</body>
+</html>
