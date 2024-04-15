@@ -2,13 +2,14 @@ package chat
 
 import (
 	"bytes"
+	"chat2/internal/entities"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 )
 
-func (ci *chatInteractor) LlamaChatRequest(requestData map[string]interface{}) (map[string]interface{}, error) {
+func (ci *chatInteractor) LlamaChatRequest(requestData *entities.ChatReq) (*entities.LlamaResp, error) {
 	// Prepare data to send to Python server
 	requestDataBytes, err := json.Marshal(requestData)
 	if err != nil {
@@ -25,7 +26,7 @@ func (ci *chatInteractor) LlamaChatRequest(requestData map[string]interface{}) (
 	defer llamaResp.Body.Close()
 
 	// Read Python server response
-	var responseData map[string]interface{}
+	var responseData *entities.LlamaResp
 	err = json.NewDecoder(llamaResp.Body).Decode(&responseData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response from Python server: %v", err)

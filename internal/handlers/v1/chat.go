@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"chat2/internal/entities"
 	"encoding/json"
 	"net/http"
 )
@@ -8,7 +9,7 @@ import (
 func (h *handlerV1) ChatHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Read user messages from request body
-	var requestData map[string]interface{}
+	var requestData *entities.ChatReq
 	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		http.Error(w, "Failed to parse request body", http.StatusBadRequest)

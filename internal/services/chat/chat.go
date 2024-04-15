@@ -1,11 +1,13 @@
 package chat
 
+import "chat2/internal/entities"
+
 // Chat represents the use case for chat functionality
 
 type chatInteractor struct{}
 
 type Chat interface {
-	LlamaChatRequest(requestData map[string]interface{}) (map[string]interface{}, error)
+	LlamaChatRequest(requestData *entities.ChatReq) (*entities.LlamaResp, error)
 }
 
 // NewChat returns a new instance of Chat
